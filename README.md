@@ -14,6 +14,14 @@ We provide TensorFlow code demonstrating our Motion-Aware Fusion framework, inte
 
 Additionally, feel free to explore the project website for more visualizations, dataset details, and experimental results.
 
+## Visualizations
+
+## Prediction Comparison
+
+| Original Video                          | TrackNetV2 Prediction                   | TrackNetV4 (Type A)                      | TrackNetV4 (Type B)                      |
+| --------------------------------------- | --------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| ![orig](assets/gifs/original.gif)      | ![v2](assets/gifs/tnv2.gif)           | ![v4 t1](assets/gifs/tnv4_type1.gif)     | ![v4 t2](assets/gifs/tnv4_type2.gif)     |
+
 
 ## 🚀 Getting Started
 
