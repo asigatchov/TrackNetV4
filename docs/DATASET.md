@@ -186,8 +186,37 @@ These settings were used consistently across all our experiments.
 
 ## 🚀🎾 New Tennis Dataset
 
+- Introduced in [TrackNetV4](https://arxiv.org/abs/2409.14543) paper.
 
-Coming soon.
+### 📊 Evaluation Protocol
+
+We follow the same evaluation protocol provided by the dataset.
+
+### 🔧 Setup Instructions
+
+1. Download the dataset using the intstructions provided in this [website](https://tracknetv4.github.io/).
+2. Unzip the zip file.
+3. Move the extracted folder into the `data/new_tennis/` directory as shown below:
+
+    <details>
+      <summary>Expected Directory Structure (Before Preprocessing)</summary>
+    
+      <pre>
+    repo-root
+    └── data
+        └── new_tennis
+            |__ <unzipped folder>
+      </pre>
+    </details>
+
+4. Run the command below to preprocess the data:
+
+   ```bash
+   python3 scripts/preprocess.py --dataset new_tennis
+   ```
+
+> ℹ️ The default target resolution is 512×288 (width × height), and the default sequence length is 3 input frames → 3 output frames.
+These settings were used consistently across all our experiments.
 
 
 ## ⚙️ Customising Dataset
