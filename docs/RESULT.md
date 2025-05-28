@@ -26,13 +26,28 @@ This document outlines the results, model weights, and experimental setup used i
 
 | Model                           | Total Test Images | TP    | TN    | FP1  | FP2  | FN   | Acc. | Prec. | Rec.  | F1    | Speed     | Model Weights Link |
 |--------------------------------|-------------------|-------|-------|------|------|------|------|--------|--------|--------|-----------|---------------------|
-| YOLOv7                         | 13064             | 9447  | 1514  | 751  | 218  | 1134 | 72.3 | 78.5   | 60.0   | 68.0   | 2.9 FPS   | [Download](#)       |
+| YOLOv7                         | 13064             | 9447  | 1514  | 751  | 218  | 1134 | 72.3 | 78.5   | 60.0   | 68.0   | -   | [Download](#)       |
 | TrackNetV2 (3 in 1 out)        | 39192             | 29129 | 4264  | 468  | 358  | 4973 | 85.2 | 92.2   | 85.4   | 88.6   | 31.8 FPS  | [Download](#)       |
 | TrackNetV2 (3 in 3 out)        | 37794             | 26324 | 6013  | 438  | 393  | 4526 | 85.6 | 92.0   | 85.3   | 88.5   | 33.9 FPS  | [Download](#)       |
 | TrackNetV2                     | 37794             | 26529 | 5993  | 523  | 511  | 4731 | 84.6 | 90.8   | 84.8   | 87.7   | 162.1 FPS | [Download](#)       |
 | TrackNetV2 (+Motion)           | 37794             | 26878 | 5834  | 565  | 672  | 4845 | 86.6 | 90.7   | 85.1   | 87.8   | 161.1 FPS | [Download](#)       |
 | TrackNetV3 (3 in 3 out)        | 10836             | 8869  | 1378  | 55   | 66   | 468  | 94.6 | 99.2   | 95.0   | 96.8   | 15.0 FPS  | [Download](#)       |
 | TrackNetV3 (+Motion)           | 10836             | 8919  | 1387  | 55   | 16   | 459  | 95.1 | 99.2   | 95.1   | 97.1   | **15.0\*** FPS | [Download](#)       |
+
+> $*$ indicates the processing speed of the entire script, including data loading, file writing, \etc. This may not be directly comparable to the other speeds.
+
+
+### 🎾 New Tennis Dataset 
+
+| Model             | Total Frames | TP   | TN  | FP1 | FP2 | FN   | Accuracy  | Precision | Recall    | F1        | Speed  | Model Weights Link |
+| ----------------- | ------------ | ---- | --- | --- | --- | ---- | --------- | --------- | --------- | --------- | ------ | ------------------ |
+| TrackNetV2        | **8472**     | 6137 | 425 | 417 | 175 | 1318 | **77.46** | **91.20** | **82.32** | **86.53** | 241.41 | [Download](#)      |
+| TrackNetV4 Type A | **8472**     | 6344 | 406 | 331 | 194 | 1197 | **79.67** | **92.36** | **84.13** | **88.05** | 233.06 | [Download](#)      |
+| TrackNetV4 Type B | **8472**     | 6317 | 453 | 265 | 147 | 1290 | **79.91** | **93.88** | **83.04** | **88.13** | 232.50 | [Download](#)      |
+
+
+
+
 
 
 ## 🧪 Experimental Setup

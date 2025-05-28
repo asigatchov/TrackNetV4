@@ -122,7 +122,7 @@ class FusionLayerTypeB(Layer):
 
         return tf.stack([output_1, output_2, output_3], axis=1)
 
-def TrackNetV4(input_height, input_width, fusion_layer_type="Type1"):
+def TrackNetV4(input_height, input_width, fusion_layer_type="TypeA"):
     """
     Builds the TrackNetV4 model that incorporates motion prompts using a multi-layer CNN.
 
@@ -146,44 +146,112 @@ def TrackNetV4(input_height, input_width, fusion_layer_type="Type1"):
     # Motion prompt layer integration
     residual_maps, _ = MotionPromptLayer()(motion_input)
 
-    # Convolutional layers and down-sampling
-    x = Conv2D(64, (3, 3), padding='same', data_format='channels_first')(imgs_input)
+    # Layer 1
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(imgs_input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x1 = Conv2D(64, (3, 3), padding='same', data_format='channels_first')(x)
-    x1 = Activation('relu')(x1)
-    x1 = BatchNormalization()(x1)
-    x = MaxPooling2D((2, 2), data_format='channels_first')(x1)
 
-    x2 = Conv2D(128, (3, 3), padding='same', data_format='channels_first')(x)
-    x2 = Activation('relu')(x2)
-    x2 = BatchNormalization()(x2)
-    x = MaxPooling2D((2, 2), data_format='channels_first')(x2)
+    # Layer 2
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x1 = BatchNormalization()(x)
 
-    x3 = Conv2D(256, (3, 3), padding='same', data_format='channels_first')(x)
-    x3 = Activation('relu')(x3)
-    x3 = BatchNormalization()(x3)
-    x = MaxPooling2D((2, 2), data_format='channels_first')(x3)
+    # Layer 3
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x1)
 
-    # Upsampling and concatenation
+    # Layer 4
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 5
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x2 = BatchNormalization()(x)
+
+    # Layer 6
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x2)
+
+    # Layer 7
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 8
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 9
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x3 = BatchNormalization()(x)
+
+    # Layer 10
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x3)
+
+    # Layer 11
+    x = Conv2D(512, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 12
+    x = Conv2D(512, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 13
+    x = Conv2D(512, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 14
     x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x3], axis=1)
-    x = Conv2D(256, (3, 3), padding='same', data_format='channels_first')(x)
+
+    # Layer 15
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
 
+    # Layer 16
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 17
+    x = Conv2D(256, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 18
     x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x2], axis=1)
-    x = Conv2D(128, (3, 3), padding='same', data_format='channels_first')(x)
+
+    # Layer 19
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
 
+    # Layer 20
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 21
     x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x1], axis=1)
-    x = Conv2D(64, (3, 3), padding='same', data_format='channels_first')(x)
+
+    # Layer 22
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
 
-    # Output layer
-    x = Conv2D(3, (1, 1), padding='same', data_format='channels_first')(x)
-    x = fusion_layer([x, residual_maps]) # Motion-aware fusion
+    # Layer 23
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 24
+    x = Conv2D(3, (1, 1), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = fusion_layer([x, residual_maps])
     x = Activation('sigmoid')(x)
 
     # Model creation
