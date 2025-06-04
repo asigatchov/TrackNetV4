@@ -44,10 +44,15 @@ class BaseDataset():
         """
         Loads x and y data for the given index.
         """
-        x_path = os.path.abspath(os.path.join(self.processed_folder, f'x_data_{idx}.npy'))
-        y_path = os.path.abspath(os.path.join(self.processed_folder, f'y_data_{idx}.npy'))
-        x = np.load(x_path)
-        y = np.load(y_path)
+        # x_path = os.path.abspath(os.path.join(self.processed_folder, f'x_data_{idx}.npy'))
+        # y_path = os.path.abspath(os.path.join(self.processed_folder, f'y_data_{idx}.npy'))
+        # x = np.load(x_path)
+        # y = np.load(y_path)
+
+        data_path = os.path.abspath(os.path.join(self.processed_folder, f'data_{idx}.npz'))
+        data = np.load(data_path)
+        x = data['x']
+        y = data['y']
         return x, y
 
     def _is_processed(self):
@@ -103,7 +108,7 @@ class BadmintonDataset(BaseDataset):
         train_count = self._process_helper(
             subfolder="Professional",
             match_list=[
-                'match1', 
+                'match1',
                 #'match2',
 #                'match3', 'match4', 'match5', 'match6',
 #                'match7', 'match8', 'match9', 'match10', 'match11', 'match12',
@@ -129,13 +134,13 @@ class BadmintonDataset(BaseDataset):
     def _process_helper(self, subfolder, match_list, save_dir, file_count):
         """
         Helper function to process a list of matches within a specified subfolder.
-        
+
         Args:
             subfolder (str): The subfolder within the dataset (e.g., "Professional").
             match_list (list): List of match folder names.
             save_dir (str): Directory name ("train" or "test") to save processed data.
             file_count (int): Starting count for naming output files.
-        
+
         Returns:
             int: Updated file_count after processing.
         """
@@ -218,8 +223,11 @@ class BadmintonDataset(BaseDataset):
                 print(y_data.shape)
 
                 # Save the processed data.
-                np.save(os.path.join(save_dir, f'x_data_{file_count}.npy'), x_data)
-                np.save(os.path.join(save_dir, f'y_data_{file_count}.npy'), y_data)
+                #np.save(os.path.join(save_dir, f'x_data_{file_count}.npy'), x_data)
+                #np.save(os.path.join(save_dir, f'y_data_{file_count}.npy'), y_data)
+                np.savez_compressed(
+                    os.path.join(save_dir, f"data_{file_count}.npz"), x=x_data, y=y_data
+                )
                 file_count += 1
 
             # Delete the frames directory after processing the match.
@@ -231,11 +239,11 @@ class BadmintonDataset(BaseDataset):
 class TennisDataset(BaseDataset):
     """
     TennisDataset processes tennis video data for training track networks.
-    
+
     References:
       - Paper: https://ieeexplore.ieee.org/document/8909871
       - Dataset: https://github.com/yastrebksv/TrackNet (retrieve the provided Dataset.zip file).
-    
+
     Args:
         root_dir (str): Root directory of the dataset.
         split (str): "game_level" or "clip_level" split.
@@ -250,7 +258,7 @@ class TennisDataset(BaseDataset):
         super().__init__(root_dir, mode, target_img_height, target_img_width, sequence_dim, mag, sigma, shuffle)
         if split not in ["game_level", "clip_level"]:
             raise ValueError("Unknown split name passed to TennisDataset class")
-        
+
         self.split = split
         self.processed_folder = os.path.join(root_dir, "processed_data", self.split, self.mode)
 
@@ -305,7 +313,7 @@ class TennisDataset(BaseDataset):
     def _process_set(self, set_data, save_data_dir, use_clip_list=True):
         """
         Process a set of clips or games.
-        
+
         :param set_data: Either a dictionary (game->list of clips) or a list of game names.
         :param save_data_dir: Directory to save processed data.
         :param use_clip_list: If True, set_data is a dict of game:clips; if False, process all clips in each game folder.
@@ -339,7 +347,7 @@ class TennisDataset(BaseDataset):
     def _process_clip(self, clip_folder):
         """
         Process a single clip folder. Reads Label.csv and processes each frame sequence.
-        
+
         Returns:
             x_data: Processed numpy array of shape (B, C, T, H, W)
             y_data: Processed numpy array of heatmaps.
@@ -399,4 +407,3 @@ class TennisDataset(BaseDataset):
 class NewTennisDataset(BaseDataset):
     def process_data(self):
         pass
-
