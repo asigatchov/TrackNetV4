@@ -121,10 +121,10 @@ def main(args):
         model_weights_path, 
         custom_objects={
             'MotionPromptLayer': MotionPromptLayer,
-            'MotionIncorporationLayerV1': MotionIncorporationLayerV1,  # Ensure these are imported or defined
-            'MotionIncorporationLayerV2': MotionIncorporationLayerV2,
-            'CombineOutputs': CombineOutputs,
-            'MotionFramesInput': MotionFramesInput,
+            #'MotionIncorporationLayerV1': MotionIncorporationLayerV1,  # Ensure these are imported or defined
+            #'MotionIncorporationLayerV2': MotionIncorporationLayerV2,
+            #'CombineOutputs': CombineOutputs,
+            #'MotionFramesInput': MotionFramesInput,
             'custom_loss': custom_loss,
         }
     )

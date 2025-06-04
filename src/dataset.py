@@ -103,23 +103,25 @@ class BadmintonDataset(BaseDataset):
         train_count = self._process_helper(
             subfolder="Professional",
             match_list=[
-                'match1', 'match2', 'match3', 'match4', 'match5', 'match6',
-                'match7', 'match8', 'match9', 'match10', 'match11', 'match12',
-                'match13', 'match14', 'match15'
+                'match1', 
+                #'match2',
+#                'match3', 'match4', 'match5', 'match6',
+#                'match7', 'match8', 'match9', 'match10', 'match11', 'match12',
+#                'match13', 'match14', 'match15'
             ],
             save_dir=train_save_dir,
             file_count=1
         )
         self._process_helper(
             subfolder="Amateur",
-            match_list=['match1', 'match2', 'match3'],
+            match_list=['match1'] , #, 'match2', 'match3'],
             save_dir=train_save_dir,
             file_count=train_count
         )
         # Process Test matches.
         self._process_helper(
             subfolder="Test",
-            match_list=['match1', 'match2', 'match3'],
+            match_list=['match1' ], # , 'match2', 'match3'],
             save_dir=test_save_dir,
             file_count=1
         )
@@ -159,7 +161,7 @@ class BadmintonDataset(BaseDataset):
                 while success:
                     success, frame = cap.read()
                     if success:
-                        cv2.imwrite(os.path.join(output_path, f'{count}.png'), frame)
+                        cv2.imwrite(os.path.join(output_path, f'{count}.jpg'), frame)
                         count += 1
                 cap.release()
 
@@ -181,7 +183,7 @@ class BadmintonDataset(BaseDataset):
                 y_data_list = []
 
                 # Compute resize ratio using a sample image.
-                sample_img = img_to_array(load_img(os.path.join(rally_path, "0.png")))
+                sample_img = img_to_array(load_img(os.path.join(rally_path, "0.jpg")))
                 ratio = sample_img.shape[0] / self.target_img_height
 
                 # Process sequences of 3 consecutive frames.
@@ -189,7 +191,7 @@ class BadmintonDataset(BaseDataset):
                     # Process x data (image sequences)
                     frames_sequence = []
                     for j in range(self.sequence_dim[0]):
-                        frame_filename = f"{frames_numbers[i + j]}.png"
+                        frame_filename = f"{frames_numbers[i + j]}.jpg"
                         frame_path = os.path.join(rally_path, frame_filename)
                         img = load_img(frame_path, target_size=(self.target_img_height, self.target_img_width))
                         img_array = img_to_array(img)

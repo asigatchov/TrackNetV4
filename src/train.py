@@ -112,6 +112,7 @@ def main(args):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_model = load_model(model_path, custom_objects=custom_objects)
             model_temp_path = os.path.join(temp_dir, "temp_weights.weights.h5")
+            print(f"Loading pretrained model from {model_path}...")
             temp_model.save_weights(model_temp_path)
             model.load_weights(model_temp_path, skip_mismatch=True)
 
@@ -153,7 +154,7 @@ def main(args):
         print(f"Epoch {epoch + 1} results: TP={TP}, TN={TN}, FP1={FP1}, FP2={FP2}, FN={FN}")
 
         # Save model checkpoint based on frequency
-        if (epoch + 1) % save_freq == 0:
+        if  True or (epoch + 1) % save_freq == 0:
             model_path = os.path.join(work_dir, f"model_{epoch + 1}.keras")
             model.save(model_path)
             print(f"Saved model to {model_path}")
@@ -172,7 +173,7 @@ if __name__ == "__main__":
         '--model_name',
         type=str,
         required=True,
-        choices=['Baseline_TrackNetV2', 'TrackNetV4_TypeA', 'TrackNetV4_TypeB'],
+        choices=['Baseline_TrackNetV2', 'TrackNetV4_TypeA', 'TrackNetV4_TypeB', 'TrackNetV4_Nano', 'TrackNetV4_Small'],
         help="Name of the model to use."
     )
     parser.add_argument(

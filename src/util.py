@@ -9,7 +9,7 @@ import tensorflow.keras.backend as K
 
 from constants import BADMINTON_DATASET_ROOT, TENNIS_DATASET_ROOT, NEW_TENNIS_DATASET_ROOT, WIDTH, HEIGHT
 from models.TrackNetV2 import TrackNetV2
-from models.TrackNetV4New import TrackNetV4
+from models.TrackNetV4 import TrackNetV4
 
 ####################################
 # Dataset related helper functions #
@@ -106,6 +106,13 @@ def get_model(model_name, height, width):
         return TrackNetV4(height, width, "TypeA")
     elif model_name == "TrackNetV4_TypeB":
         return TrackNetV4(height, width, "TypeB")
+    elif model_name == "TrackNetV4_Nano":
+        from models.TrackNetV4Nano import TrackNetV4Nano
+        return TrackNetV4Nano(height, width, fusion_layer_type="TypeA")
+    elif model_name == "TrackNetV4_Small":
+        from models.TrackNetV4Small import TrackNetV4Small
+        return TrackNetV4Small(height, width, fusion_layer_type="TypeA")
+   
     else:
         raise ValueError("Unknown model name")
 

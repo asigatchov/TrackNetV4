@@ -257,3 +257,175 @@ def TrackNetV4(input_height, input_width, fusion_layer_type="TypeA"):
     # Model creation
     model = Model(inputs=imgs_input, outputs=x)
     return model
+
+
+
+
+def TrackNetV4Nano(input_height, input_width, fusion_layer_type="TypeA"):
+    """
+    Builds a lightweight TrackNetV4Nano model for faster inference.
+
+    Args:
+        input_height (int): The height of the input.
+        input_width (int): The width of the input.
+
+    Returns:
+        Model: A Keras model instance.
+    """
+    if fusion_layer_type == "TypeA":
+        fusion_layer = FusionLayerTypeA()
+    else:
+        raise ValueError("Unknown Motion Fusion Type")
+
+    imgs_input = Input(shape=(9, input_height, input_width))
+    motion_input = Reshape((3, 3, input_height, input_width))(imgs_input)
+    
+    # Motion prompt layer integration
+    residual_maps, _ = MotionPromptLayer()(motion_input)
+
+    # Layer 1
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(imgs_input)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 2
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x1 = BatchNormalization()(x)
+
+    # Layer 3
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x1)
+
+    # Layer 4
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 5
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x2 = BatchNormalization()(x)
+
+    # Layer 6
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x2)
+
+    # Layer 7
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 8
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x3 = BatchNormalization()(x)
+
+    # Layer 9
+    x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x2], axis=1)
+
+    # Layer 10
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 11
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 12
+    x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x1], axis=1)
+
+    # Layer 13
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 14
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 15
+    x = Conv2D(3, (1, 1), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = fusion_layer([x, residual_maps])
+    x = Activation('sigmoid')(x)
+
+    # Model creation
+    model = Model(inputs=imgs_input, outputs=x)
+    return model
+
+
+
+
+def TrackNetV4Small(input_height, input_width):
+    """
+    Builds the TrackNetV4Small model, a lightweight version of TrackNetV4 for improved performance.
+    
+    Args:
+        input_height (int): The height of the input.
+        input_width (int): The width of the input.
+
+    Returns:
+        Model: A Keras model instance.
+    """
+    fusion_layer = FusionLayerTypeA()
+
+    # Input: 3 RGB frames (9 channels total)
+    imgs_input = Input(shape=(9, input_height, input_width))
+    motion_input = Reshape((3, 3, input_height, input_width))(imgs_input)
+
+    # Motion prompt layer
+    residual_maps, _ = MotionPromptLayer()(motion_input)
+
+    # Encoder: Reduced layers and filters
+    # Layer 1
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(imgs_input)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 2
+    x1 = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x1 = Activation('relu')(x1)
+    x1 = BatchNormalization()(x1)
+
+    # Layer 3
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x1)
+
+    # Layer 4
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x2 = BatchNormalization()(x)
+
+    # Layer 5
+    x = MaxPooling2D((2, 2), strides=(2, 2), data_format='channels_first')(x2)
+
+    # Layer 6
+    x = Conv2D(128, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Decoder: Reduced layers
+    # Layer 7
+    x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x2], axis=1)
+
+    # Layer 8
+    x = Conv2D(64, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Layer 9
+    x = concatenate([UpSampling2D((2, 2), data_format='channels_first')(x), x1], axis=1)
+
+    # Layer 10
+    x = Conv2D(32, (3, 3), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # Output layer
+    x = Conv2D(3, (1, 1), kernel_initializer='random_uniform', padding='same', data_format='channels_first')(x)
+    x = fusion_layer([x, residual_maps])
+    x = Activation('sigmoid')(x)
+
+    # Model creation
+    model = Model(inputs=imgs_input, outputs=x)
+    return model
