@@ -37,8 +37,8 @@ class BaseDataset():
         """
         if not self._is_processed():
             return 0
-        npy_files = glob(os.path.join(self.processed_folder, "*.npy"))
-        return len(npy_files) // 2
+        npy_files = glob(os.path.join(self.processed_folder, "*.npz"))
+        return len(npy_files)
 
     def _getitem(self, idx):
         """
@@ -63,16 +63,16 @@ class BaseDataset():
             print(f"Processed folder does not exist: {self.processed_folder}")
             return False
 
-        npy_files = glob(os.path.join(self.processed_folder, "*.npy"))
+        npy_files = glob(os.path.join(self.processed_folder, "*.npz"))
         if npy_files:
             return True
         else:
-            print(f"No .npy files found in {self.processed_folder}")
+            print(f"No .npz files found in {self.processed_folder}")
             return False
 
     def process_data(self):
         """
-        Processes the dataset and creates processed .npy files.
+        Processes the dataset and creates processed .npz files.
         This method must be implemented by subclasses.
         """
         raise NotImplementedError("Subclasses must implement the process_data method.")
@@ -223,8 +223,7 @@ class BadmintonDataset(BaseDataset):
                 print(y_data.shape)
 
                 # Save the processed data.
-                #np.save(os.path.join(save_dir, f'x_data_{file_count}.npy'), x_data)
-                #np.save(os.path.join(save_dir, f'y_data_{file_count}.npy'), y_data)
+
                 np.savez_compressed(
                     os.path.join(save_dir, f"data_{file_count}.npz"), x=x_data, y=y_data
                 )
