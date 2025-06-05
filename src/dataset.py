@@ -9,6 +9,7 @@ from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import shutil
 import threading
 import time
+import gc
 
 from util import genHeatMap
 from constants import (
@@ -21,7 +22,7 @@ from constants import (
 )
 
 class BaseDataset:
-    def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True, buffer_size=3):
+    def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True, buffer_size=1):
         self.root_dir = root_dir
         self.mode = mode
         self.target_img_height = target_img_height
@@ -33,7 +34,7 @@ class BaseDataset:
         self.sigma = sigma
         self.data_files = []
         self.buffer_size = buffer_size
-        self.buffer = deque(maxlen=buffer_size)
+        self.buffer = deque(maxlen=buffer_size+1)
         self.buffer_lock = threading.Lock()
         self.stop_thread = threading.Event()
         self._refresh_file_list()
@@ -61,10 +62,13 @@ class BaseDataset:
         """
         file_size = os.path.getsize(data_path) / 1000 / 1000
         print(f"Loading data from {data_path}, size: {file_size} Mbytes")
-        data = np.load(data_path)
+        start = time.time()
+        data = np.load(data_path, mmap_mode='r')
         x = data['x']
         y = data['y']
-        return x, y
+        print(f"Loaded data shape: x={x.shape}, y={y.shape} in {time.time() - start:.2f} seconds")
+        # If x.shape[0] > 400, split in half and return as a list of tuples
+        return (x, y)
 
     def _loader_thread(self):
         """
@@ -76,10 +80,18 @@ class BaseDataset:
         
         current_idx = 0
         while not self.stop_thread.is_set():
-            with self.buffer_lock:
+            lock_acquired = self.buffer_lock.acquire(timeout=30)
+            if not lock_acquired:
+                print("Timeout: Could not acquire buffer_lock for 30 seconds. Skipping this iteration to avoid deadlock.")
+                continue
+            try:
                 if len(self.buffer) >= self.buffer_size:
+                    self.buffer_lock.release()
                     time.sleep(0.1)  # Wait if buffer is full
                     continue
+            finally:
+                if self.buffer_lock.locked():
+                    self.buffer_lock.release()
             
             if current_idx >= len(self.data_files):
                 if self.shuffle:
@@ -88,9 +100,16 @@ class BaseDataset:
             
             data_path = self.data_files[indices[current_idx]]
             try:
-                x, y = self._load_data(data_path)
-                with self.buffer_lock:
+                x,y = self._load_data(data_path)
+                lock_acquired = self.buffer_lock.acquire(timeout=30)
+                if not lock_acquired:
+                    print("Timeout: Could not acquire buffer_lock for 30 seconds while appending to buffer.")
+                    current_idx += 1
+                    continue
+                try:
                     self.buffer.append((x, y))
+                finally:
+                    self.buffer_lock.release()
                 current_idx += 1
             except Exception as e:
                 print(f"Error loading {data_path}: {e}")
@@ -111,7 +130,7 @@ class BaseDataset:
         """
         while True:
             with self.buffer_lock:
-                if self.buffer:
+                if len(self.buffer) > 0:
                     return self.buffer.popleft()
             
             # If buffer is empty, load directly to avoid deadlock
