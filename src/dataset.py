@@ -4,9 +4,11 @@ import numpy as np
 import cv2
 import pandas as pd
 from glob import glob
-from collections import defaultdict
+from collections import defaultdict, deque
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import shutil
+import threading
+import time
 
 from util import genHeatMap
 from constants import (
@@ -18,9 +20,8 @@ from constants import (
     TENNIS_DATASET_CLIP_LEVEL_SPLIT_CSV,
 )
 
-
-class BaseDataset():
-    def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True):
+class BaseDataset:
+    def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True, buffer_size=3):
         self.root_dir = root_dir
         self.mode = mode
         self.target_img_height = target_img_height
@@ -31,7 +32,12 @@ class BaseDataset():
         self.mag = mag
         self.sigma = sigma
         self.data_files = []
+        self.buffer_size = buffer_size
+        self.buffer = deque(maxlen=buffer_size)
+        self.buffer_lock = threading.Lock()
+        self.stop_thread = threading.Event()
         self._refresh_file_list()
+        self._start_loader_thread()
 
     def _refresh_file_list(self):
         """
@@ -49,23 +55,72 @@ class BaseDataset():
         self._refresh_file_list()
         return len(self.data_files)
 
-    def _getitem(self, idx):
+    def _load_data(self, data_path):
         """
-        Loads x and y data for the given index.
+        Loads x and y data from an npz file.
         """
-        #self._refresh_file_list()
-        data_path = self.data_files[idx]
-        file_size = os.path.getsize(data_path)/1000/1000
+        file_size = os.path.getsize(data_path) / 1000 / 1000
         print(f"Loading data from {data_path}, size: {file_size} Mbytes")
         data = np.load(data_path)
         x = data['x']
         y = data['y']
-        del data
         return x, y
+
+    def _loader_thread(self):
+        """
+        Background thread to preload data into the buffer.
+        """
+        indices = list(range(len(self.data_files)))
+        if self.shuffle:
+            np.random.shuffle(indices)
+        
+        current_idx = 0
+        while not self.stop_thread.is_set():
+            with self.buffer_lock:
+                if len(self.buffer) >= self.buffer_size:
+                    time.sleep(0.1)  # Wait if buffer is full
+                    continue
+            
+            if current_idx >= len(self.data_files):
+                if self.shuffle:
+                    np.random.shuffle(indices)
+                current_idx = 0
+            
+            data_path = self.data_files[indices[current_idx]]
+            try:
+                x, y = self._load_data(data_path)
+                with self.buffer_lock:
+                    self.buffer.append((x, y))
+                current_idx += 1
+            except Exception as e:
+                print(f"Error loading {data_path}: {e}")
+                current_idx += 1
+                continue
+
+    def _start_loader_thread(self):
+        """
+        Start the background loader thread.
+        """
+        if self._is_processed():
+            self.loader_thread = threading.Thread(target=self._loader_thread, daemon=True)
+            self.loader_thread.start()
+
+    def _getitem(self, idx):
+        """
+        Loads x and y data for the given index from the buffer or directly if buffer is empty.
+        """
+        while True:
+            with self.buffer_lock:
+                if self.buffer:
+                    return self.buffer.popleft()
+            
+            # If buffer is empty, load directly to avoid deadlock
+            print("Buffer empty, loading directly")
+            return self._load_data(self.data_files[idx])
 
     def _is_processed(self):
         """
-        Checks if the processed .npy files exist for the current mode.
+        Checks if the processed .npz files exist for the current mode.
         """
         print(f"Checking if dataset is processed in {self.processed_folder}...")
         if not os.path.exists(self.processed_folder):
@@ -88,7 +143,7 @@ class BaseDataset():
 
     def __iter__(self):
         """
-        Generator to iterate over dataset sample file names.
+        Generator to iterate over dataset samples from the buffer.
         """
         if not self._is_processed():
             print("Dataset not processed yet. Please run the `process_data` method first.")
@@ -101,6 +156,14 @@ class BaseDataset():
 
         for i in indices:
             yield self._getitem(i)
+
+    def __del__(self):
+        """
+        Stop the loader thread when the dataset object is destroyed.
+        """
+        self.stop_thread.set()
+        if hasattr(self, 'loader_thread'):
+            self.loader_thread.join()
 
 
 class BadmintonDataset(BaseDataset):

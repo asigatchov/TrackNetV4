@@ -147,8 +147,6 @@ def main(args):
             print(x_train.dtype, y_train.dtype)
             print('#' * 50)
             model.fit(x_train, y_train, batch_size=batch_size, epochs=1, callbacks=callbacks, verbose=1)
-
-            
             del x_train, y_train
 
 
