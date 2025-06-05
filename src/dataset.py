@@ -30,41 +30,50 @@ class BaseDataset():
         self.shuffle = shuffle
         self.mag = mag
         self.sigma = sigma
+        self.data_files = []
+        self._refresh_file_list()
+
+    def _refresh_file_list(self):
+        """
+        Refresh the list of processed data files in the processed_folder.
+        """
+        if os.path.exists(self.processed_folder):
+            self.data_files = sorted(glob(os.path.join(self.processed_folder, "*.npz")))
+        else:
+            self.data_files = []
 
     def __len__(self):
         """
         Returns the number of processed sample pairs (x and y).
         """
-        if not self._is_processed():
-            return 0
-        npy_files = glob(os.path.join(self.processed_folder, "*.npz"))
-        return len(npy_files)
+        self._refresh_file_list()
+        return len(self.data_files)
 
     def _getitem(self, idx):
         """
         Loads x and y data for the given index.
         """
-        # x_path = os.path.abspath(os.path.join(self.processed_folder, f'x_data_{idx}.npy'))
-        # y_path = os.path.abspath(os.path.join(self.processed_folder, f'y_data_{idx}.npy'))
-        # x = np.load(x_path)
-        # y = np.load(y_path)
-
-        data_path = os.path.abspath(os.path.join(self.processed_folder, f'data_{idx}.npz'))
+        #self._refresh_file_list()
+        data_path = self.data_files[idx]
+        file_size = os.path.getsize(data_path)/1000/1000
+        print(f"Loading data from {data_path}, size: {file_size} Mbytes")
         data = np.load(data_path)
         x = data['x']
         y = data['y']
+        del data
         return x, y
 
     def _is_processed(self):
         """
         Checks if the processed .npy files exist for the current mode.
         """
+        print(f"Checking if dataset is processed in {self.processed_folder}...")
         if not os.path.exists(self.processed_folder):
             print(f"Processed folder does not exist: {self.processed_folder}")
             return False
 
-        npy_files = glob(os.path.join(self.processed_folder, "*.npz"))
-        if npy_files:
+        npz_files = glob(os.path.join(self.processed_folder, "*.npz"))
+        if npz_files:
             return True
         else:
             print(f"No .npz files found in {self.processed_folder}")
@@ -79,13 +88,14 @@ class BaseDataset():
 
     def __iter__(self):
         """
-        Generator to iterate over dataset samples.
+        Generator to iterate over dataset sample file names.
         """
         if not self._is_processed():
             print("Dataset not processed yet. Please run the `process_data` method first.")
             return
 
-        indices = np.arange(1, len(self) + 1, dtype=int)
+        self._refresh_file_list()
+        indices = list(range(len(self.data_files)))
         if self.shuffle:
             np.random.shuffle(indices)
 
@@ -166,7 +176,7 @@ class BadmintonDataset(BaseDataset):
                 while success:
                     success, frame = cap.read()
                     if success:
-                        cv2.imwrite(os.path.join(output_path, f'{count}.jpg'), frame)
+                        cv2.imwrite(os.path.join(output_path, f'{count}.png'), frame)
                         count += 1
                 cap.release()
 
@@ -188,7 +198,7 @@ class BadmintonDataset(BaseDataset):
                 y_data_list = []
 
                 # Compute resize ratio using a sample image.
-                sample_img = img_to_array(load_img(os.path.join(rally_path, "0.jpg")))
+                sample_img = img_to_array(load_img(os.path.join(rally_path, "0.png")))
                 ratio = sample_img.shape[0] / self.target_img_height
 
                 # Process sequences of 3 consecutive frames.
@@ -196,7 +206,7 @@ class BadmintonDataset(BaseDataset):
                     # Process x data (image sequences)
                     frames_sequence = []
                     for j in range(self.sequence_dim[0]):
-                        frame_filename = f"{frames_numbers[i + j]}.jpg"
+                        frame_filename = f"{frames_numbers[i + j]}.png"
                         frame_path = os.path.join(rally_path, frame_filename)
                         img = load_img(frame_path, target_size=(self.target_img_height, self.target_img_width))
                         img_array = img_to_array(img)
@@ -219,8 +229,8 @@ class BadmintonDataset(BaseDataset):
                 x_data = np.asarray(x_data_list, dtype='float32') / 255.0
                 y_data = np.asarray(y_data_list)
 
-                print(x_data.shape)
-                print(y_data.shape)
+                print('x_data:', x_data.shape)
+                print('y_data', y_data.shape)
 
                 # Save the processed data.
 

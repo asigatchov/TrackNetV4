@@ -41,7 +41,7 @@ import tempfile
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adadelta
-
+from tensorflow.keras.callbacks import TensorBoard, EarlyStopping, ModelCheckpoint
 from util import custom_loss, get_dataset, get_model, outcome
 from models.TrackNetV4 import (
     MotionPromptLayer,
@@ -113,6 +113,7 @@ def main(args):
             temp_model = load_model(model_path, custom_objects=custom_objects)
             model_temp_path = os.path.join(temp_dir, "temp_weights.weights.h5")
             print(f"Loading pretrained model from {model_path}...")
+            print(f"Saving temporary model weights to {model_temp_path}...")
             temp_model.save_weights(model_temp_path)
             model.load_weights(model_temp_path, skip_mismatch=True)
 
@@ -127,31 +128,50 @@ def main(args):
         metrics=['accuracy']
     )
 
+    callbacks = [
+        TensorBoard(log_dir='./logs', histogram_freq=1),  # Логи для TensorBoard
+        EarlyStopping(monitor='loss', patience=3, verbose=1),  # Остановка при стагнации
+        ModelCheckpoint('best_model.keras', save_best_only=True, verbose=1)  # Сохранение лучшей модели
+    ]
     # Main training loop
     for epoch in range(epochs):
         print(f"======== Epoch {epoch + 1} ========")
 
         # Train on each batch in the training dataset
+        len_dataset = len(dataset_train)
+        cnt = 0
         for x_train, y_train in dataset_train:
-            model.fit(x_train, y_train, batch_size=batch_size, epochs=1)
+            cnt += 1
+            print(f"Processing batch {cnt}/{len_dataset}...")
+            print(x_train.shape, y_train.shape)
+            print(x_train.dtype, y_train.dtype)
+            print('#' * 50)
+            model.fit(x_train, y_train, batch_size=batch_size, epochs=1, callbacks=callbacks, verbose=1)
+
+            
             del x_train, y_train
 
-        # Evaluate model performance on the training set
-        TP = TN = FP1 = FP2 = FN = 0
-        for x_train, y_train in dataset_train:
-            y_pred = model.predict(x_train, batch_size=batch_size)
-            y_pred = (y_pred > 0.5).astype('float32')
 
-            tp, tn, fp1, fp2, fn = outcome(y_pred, y_train, tol)
-            TP += tp
-            TN += tn
-            FP1 += fp1
-            FP2 += fp2
-            FN += fn
+        if (epoch + 1) % 5 == 0:
+            print(f"Epoch {epoch + 1} completed. Run predictions")
+            # Evaluate model performance on the training set
+            TP = TN = FP1 = FP2 = FN = 0
+            for x_train, y_train in dataset_train:
+                y_pred = model.predict(x_train, batch_size=batch_size)
+                y_pred = (y_pred > 0.5).astype('float32')
 
-            del x_train, y_train, y_pred
+                tp, tn, fp1, fp2, fn = outcome(y_pred, y_train, tol)
+                TP += tp
+                TN += tn
+                FP1 += fp1
+                FP2 += fp2
+                FN += fn
 
-        print(f"Epoch {epoch + 1} results: TP={TP}, TN={TN}, FP1={FP1}, FP2={FP2}, FN={FN}")
+                del x_train, y_train, y_pred
+
+            print(f"Epoch {epoch + 1} results: TP={TP}, TN={TN}, FP1={FP1}, FP2={FP2}, FN={FN}")
+        else:
+            print(f"Epoch {epoch + 1} completed. No evaluation this time.")
 
         # Save model checkpoint based on frequency
         if  True or (epoch + 1) % save_freq == 0:
@@ -189,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("--width", type=int, default=512, help="Target width of the images")
     parser.add_argument("--epochs", type=int, default=30, help="Number of epochs for training")
     parser.add_argument("--tol", type=int, default=4, help="Tolerance for the outcome evaluation")
+
     parser.add_argument(
         "--model_path",
         type=str,
@@ -196,6 +217,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--work_dir", type=str, default="./models", help="Directory to save the trained models")
     parser.add_argument("--save_freq", type=int, default=1, help="Frequency (in epochs) to save model checkpoints")
-    
+
+
     args = parser.parse_args()
     main(args)
