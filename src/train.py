@@ -105,9 +105,9 @@ def main(args):
             'FusionLayerTypeA': FusionLayerTypeA,
             'FusionLayerTypeB': FusionLayerTypeB,
         }
-        # This block ensures model weights can be loaded even if there are architectural differences 
+        # This block ensures model weights can be loaded even if there are architectural differences
         # (i.e. additional layers like fusion layers) between the saved model and the current one.
-        # By saving weights from the loaded model and then reloading them into the current model 
+        # By saving weights from the loaded model and then reloading them into the current model
         # using `skip_mismatch=True`, it avoids errors caused by shape or structure mismatches.
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_model = load_model(model_path, custom_objects=custom_objects)
@@ -191,7 +191,7 @@ if __name__ == "__main__":
         '--model_name',
         type=str,
         required=True,
-        choices=['Baseline_TrackNetV2', 'TrackNetV4_TypeA', 'TrackNetV4_TypeB', 'TrackNetV4_Nano', 'TrackNetV4_Small'],
+       # choices=['Baseline_TrackNetV2', 'TrackNetV4_TypeA', 'TrackNetV4_TypeB', 'TrackNetV4_Nano', 'TrackNetV4_Small'],
         help="Name of the model to use."
     )
     parser.add_argument(

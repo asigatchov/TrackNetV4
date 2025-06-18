@@ -112,7 +112,11 @@ def get_model(model_name, height, width):
     elif model_name == "TrackNetV4_Small":
         from models.TrackNetV4Small import TrackNetV4Small
         return TrackNetV4Small(height, width, fusion_layer_type="TypeA")
-   
+    elif model_name == "TrackNetV4_Fast":
+        from models.TrackNetV4Fast import TrackNetV4Fast
+        return TrackNetV4Fast(height, width)
+
+
     else:
         raise ValueError("Unknown model name")
 
