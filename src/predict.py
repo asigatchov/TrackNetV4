@@ -4,7 +4,7 @@ It processes the video, performs inference using the loaded model, and outputs t
 as annotated video and CSV files with trajectory points.
 
 Usage:
-    python script.py --video_path <path_to_video> --model_weights <path_to_model_weights> --output_dir <output_directory> [--queue_length <queue_length>]
+    python script.py --video_path <path_to_video> --model_weights <path_to_model_weights> --output_dir <output_directory> [--queue_length <queue_length>] [--show_frame]
 """
 
 import os
@@ -15,7 +15,6 @@ import time
 import queue
 import argparse
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array, array_to_img
 import keras.backend as K
 from models.TrackNetV4 import MotionPromptLayer, FusionLayerTypeA, FusionLayerTypeB
 from constants import HEIGHT, WIDTH
@@ -42,13 +41,15 @@ def run_model_inference(model, frames):
     
     # Preprocess the frames for model input
     for frame in frames:
-        resized_frame = array_to_img(frame[..., ::-1]).resize((INPUT_WIDTH, INPUT_HEIGHT))
-        frame_array = np.moveaxis(img_to_array(resized_frame), -1, 0)
+        # Convert RGB to BGR (OpenCV format) and resize
+        resized_frame = cv2.resize(frame[..., ::-1], (INPUT_WIDTH, INPUT_HEIGHT))
+        # Transpose to (channels, height, width)
+        frame_array = np.transpose(resized_frame, (2, 0, 1))
         input_batch.extend(frame_array[:3])
 
     # Prepare input for model prediction
     input_batch = np.asarray(input_batch).reshape((1, 9, INPUT_HEIGHT, INPUT_WIDTH)).astype('float32') / 255
-
+    
     # Perform prediction
     inference_start_time = time.time()
     predictions = model.predict(input_batch, batch_size=BATCH_SIZE, verbose=1)
@@ -57,9 +58,9 @@ def run_model_inference(model, frames):
     inference_time = inference_end_time - inference_start_time
     return predictions, inference_time
 
-def post_process_predictions(predictions, frame1, frame2, frame3, frame_count, video_writer, csv_output_path, width_ratio, height_ratio, predicted_points_queue):
+def post_process_predictions(predictions, frame1, frame2, frame3, frame_count, video_writer, csv_output_path, width_ratio, height_ratio, predicted_points_queue, show_frame):
     """
-    Post-processes the predictions, annotates the video, and saves results.
+    Post-processes the predictions, annotates the video, saves results, and optionally displays the frame.
     
     Args:
         predictions: Predictions from the model.
@@ -70,6 +71,10 @@ def post_process_predictions(predictions, frame1, frame2, frame3, frame_count, v
         width_ratio: Ratio to adjust the predicted points' width.
         height_ratio: Ratio to adjust the predicted points' height.
         predicted_points_queue: Deque storing the predicted points.
+        show_frame (bool): Whether to display the processed frame.
+    
+    Returns:
+        bool: True if processing should continue, False if user requests exit.
     """
     binary_predictions = (predictions > 0.5).astype('float32')
     binary_heatmaps = (binary_predictions[0] * 255).astype('uint8')
@@ -79,6 +84,11 @@ def post_process_predictions(predictions, frame1, frame2, frame3, frame_count, v
             with open(csv_output_path, 'a') as csv_file:
                 csv_file.write(f"{frame_count},0,0,0\n")
             video_writer.write(current_frame)
+            if show_frame:
+                cv2.namedWindow("Frame", cv2.WINDOW_NORMAL)
+                cv2.imshow('Frame', current_frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    return False
         else:
             contours, _ = cv2.findContours(binary_heatmaps[i].copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             bounding_boxes = [cv2.boundingRect(contour) for contour in contours]
@@ -99,9 +109,19 @@ def post_process_predictions(predictions, frame1, frame2, frame3, frame_count, v
             cv2.circle(frame_copy, (predicted_x_center, predicted_y_center), 5, (0, 0, 255), -1)
             video_writer.write(frame_copy)
 
+            # Display frame if enabled
+            if show_frame:
+                cv2.imshow('Frame', frame_copy)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    return False
+
             # Write results to CSV
             with open(csv_output_path, 'a') as csv_file:
                 csv_file.write(f"{frame_count},1,{predicted_x_center},{predicted_y_center}\n")
+        
+        frame_count += 1
+    
+    return True
 
 def main(args):
     """
@@ -111,6 +131,7 @@ def main(args):
     model_weights_path = args.model_weights
     output_dir = args.output_dir
     queue_length = args.queue_length
+    show_frame = args.show_frame
     os.makedirs(output_dir, exist_ok=True)
 
     # Initialize the predicted points queue with the specified length
@@ -121,10 +142,6 @@ def main(args):
         model_weights_path, 
         custom_objects={
             'MotionPromptLayer': MotionPromptLayer,
-            #'MotionIncorporationLayerV1': MotionIncorporationLayerV1,  # Ensure these are imported or defined
-            #'MotionIncorporationLayerV2': MotionIncorporationLayerV2,
-            #'CombineOutputs': CombineOutputs,
-            #'MotionFramesInput': MotionFramesInput,
             'custom_loss': custom_loss,
         }
     )
@@ -164,11 +181,17 @@ def main(args):
     while success:
         frames = [frame1, frame2, frame3]
         predictions, inference_time = run_model_inference(model, frames)
-        post_process_predictions(predictions, frame1, frame2, frame3, frame_count, video_writer, csv_output_path, width_ratio, height_ratio, predicted_points_queue)
+        continue_processing = post_process_predictions(
+            predictions, frame1, frame2, frame3, frame_count, video_writer, 
+            csv_output_path, width_ratio, height_ratio, predicted_points_queue, show_frame
+        )
         
+        if not continue_processing:
+            break
+
         # Accumulate the total inference time
         total_inference_time += inference_time
-        frame_count += 1
+        frame_count += 3  # Increment by 3 since we process three frames at a time
 
         # Read next set of frames
         success, frame1 = video_capture.read()
@@ -177,6 +200,9 @@ def main(args):
 
     # Clean up resources
     video_writer.release()
+    video_capture.release()
+    if show_frame:
+        cv2.destroyAllWindows()
     end_time = time.time()
 
     # Output timing information
@@ -192,7 +218,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Predict trajectories on a video using a trained model")
     parser.add_argument('--video_path', required=True, help="Path to the video file")
     parser.add_argument('--model_weights', required=True, help="Path to the model weights")
-    parser.add_argument('--output_dir', default=os.getcwd(), help="Directory to save output files (default: current working directory)")
-    parser.add_argument('--queue_length', type=int, default=5, help="Length of the predicted points queue (default: 5)")
+    parser.add_argument('--output_dir', default=os.path.join(os.getcwd(), 'predicts_demo'), help="Directory to save output files (default: current working directory)")
+    parser.add_argument('--queue_length', type=int, default=8, help="Length of the predicted points queue (default: 8)")
+    parser.add_argument('--show_frame', action='store_true', help="Display the processed frames during inference (default: False)")
     args = parser.parse_args()
     main(args)
