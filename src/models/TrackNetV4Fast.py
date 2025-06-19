@@ -54,7 +54,7 @@ class MotionPromptLayer(Layer):
         return attention_map
 
     def compute_output_shape(self, input_shape):
-        # Input shape: [batch, time, channels, height, width]
+        # Input shape: [batch, time, channels, height, width]   
         # Output shape: [batch, time-1, height, width]
         return (input_shape[0], input_shape[1] - 1, input_shape[3], input_shape[4])
 

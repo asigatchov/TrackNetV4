@@ -44,10 +44,12 @@ from tensorflow.keras.optimizers import Adadelta
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping, ModelCheckpoint
 from util import custom_loss, get_dataset, get_model, outcome
 from models.TrackNetV4 import (
-    MotionPromptLayer,
+    #MotionPromptLayer,
     FusionLayerTypeA,
     FusionLayerTypeB
 )
+
+from models.TrackNetV4Fast import MotionPromptLayer
 
 
 def main(args):
@@ -139,6 +141,7 @@ def main(args):
 
         # Train on each batch in the training dataset
         len_dataset = len(dataset_train)
+        
         cnt = 0
         for x_train, y_train in dataset_train:
             cnt += 1
@@ -146,30 +149,30 @@ def main(args):
             print(x_train.shape, y_train.shape)
             print(x_train.dtype, y_train.dtype)
             print('#' * 50)
-            model.fit(x_train, y_train, batch_size=batch_size, epochs=1, callbacks=callbacks, verbose=1)
+            model.fit(x_train, y_train, batch_size=batch_size, epochs=1, callbacks=callbacks, verbose=0)
             del x_train, y_train
 
 
-        if (epoch + 1) % 5 == 0:
-            print(f"Epoch {epoch + 1} completed. Run predictions")
-            # Evaluate model performance on the training set
-            TP = TN = FP1 = FP2 = FN = 0
-            for x_train, y_train in dataset_train:
-                y_pred = model.predict(x_train, batch_size=batch_size)
-                y_pred = (y_pred > 0.5).astype('float32')
+        # if (epoch + 1) % 5 == 0:
+        #     print(f"Epoch {epoch + 1} completed. Run predictions")
+        #     # Evaluate model performance on the training set
+        #     TP = TN = FP1 = FP2 = FN = 0
+        #     for x_train, y_train in dataset_train:
+        #         y_pred = model.predict(x_train, batch_size=batch_size)
+        #         y_pred = (y_pred > 0.5).astype('float32')
 
-                tp, tn, fp1, fp2, fn = outcome(y_pred, y_train, tol)
-                TP += tp
-                TN += tn
-                FP1 += fp1
-                FP2 += fp2
-                FN += fn
+        #         tp, tn, fp1, fp2, fn = outcome(y_pred, y_train, tol)
+        #         TP += tp
+        #         TN += tn
+        #         FP1 += fp1
+        #         FP2 += fp2
+        #         FN += fn
 
-                del x_train, y_train, y_pred
+        #         del x_train, y_train, y_pred
 
-            print(f"Epoch {epoch + 1} results: TP={TP}, TN={TN}, FP1={FP1}, FP2={FP2}, FN={FN}")
-        else:
-            print(f"Epoch {epoch + 1} completed. No evaluation this time.")
+        #     print(f"Epoch {epoch + 1} results: TP={TP}, TN={TN}, FP1={FP1}, FP2={FP2}, FN={FN}")
+        # else:
+        #     print(f"Epoch {epoch + 1} completed. No evaluation this time.")
 
         # Save model checkpoint based on frequency
         if  True or (epoch + 1) % save_freq == 0:
@@ -198,7 +201,7 @@ if __name__ == "__main__":
         '--dataset',
         type=str,
         required=True,
-        choices=['tennis_game_level_split', 'tennis_clip_level_split', 'badminton', 'new_tennis'],
+        choices=['tennis_game_level_split', 'tennis_clip_level_split', 'badminton', 'new_tennis', 'custom_dataset'],
         help="Name of the dataset to use."
     )
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training")

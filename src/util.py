@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import tensorflow.keras.backend as K
 
-from constants import BADMINTON_DATASET_ROOT, TENNIS_DATASET_ROOT, NEW_TENNIS_DATASET_ROOT, WIDTH, HEIGHT
+from constants import BADMINTON_DATASET_ROOT, TENNIS_DATASET_ROOT, NEW_TENNIS_DATASET_ROOT, CUSTOMER_DATASET_ROOT, WIDTH, HEIGHT
 from models.TrackNetV2 import TrackNetV2
 from models.TrackNetV4 import TrackNetV4
 
@@ -120,10 +120,15 @@ def get_model(model_name, height, width):
     else:
         raise ValueError("Unknown model name")
 
-def get_dataset(dataset_name, mode, height=HEIGHT, width=WIDTH):
+def get_dataset(dataset_name, mode, height=HEIGHT, width=WIDTH, chunk_size=1000):
     """
     Retrieve an instance of a dataset based on the provided dataset name and mode.
     """
+    
+    if dataset_name == "custom_dataset":
+        from custom_dataset import CustomDataset
+        return CustomDataset(root_dir=CUSTOMER_DATASET_ROOT, mode=mode,  target_img_height=height, target_img_width=width)
+
     from dataset import TennisDataset, BadmintonDataset, NewTennisDataset
 
     if dataset_name == "tennis_game_level_split":

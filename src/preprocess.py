@@ -35,7 +35,7 @@ if __name__ == "__main__":
         '--dataset',
         type=str,
         required=True,
-        choices=['tennis_game_level_split', 'tennis_clip_level_split', 'badminton', 'new_tennis'],
+        choices=['tennis_game_level_split', 'tennis_clip_level_split', 'badminton', 'new_tennis', 'custom_dataset'],
         help="Name of the dataset to use."
     )
     parser.add_argument('--height', type=int, default=288, help="Target image height (default: 288).")

@@ -9,6 +9,8 @@ TENNIS_DATASET_ROOT = "data/tennis"
 NEW_TENNIS_DATASET_ROOT = "data/new_tennis"
 BADMINTON_DATASET_ROOT = "data/badminton"
 
+CUSTOMER_DATASET_ROOT = "data/custom"
+
 HEIGHT = 288
 WIDTH = 512
 MAG = 1
