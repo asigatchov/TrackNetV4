@@ -11,6 +11,7 @@ import time
 import gc
 from util import genHeatMap
 from constants import SIGMA, MAG, WIDTH, HEIGHT
+from multiprocessing import Pool, cpu_count
 
 class BaseCustomDataset:
     def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True, buffer_size=5):
@@ -183,14 +184,92 @@ class BaseCustomDataset:
         with open(self.metadata_file, 'w') as f:
             json.dump(metadata, f, indent=2)
 
+# Move worker to module level to make it picklable
+def process_video_worker(args):
+    video_path, csv_path, processed_folder, video_name, hdf5_path = args
+    import cv2
+    import pandas as pd
+    import numpy as np
+    import gc
+    from util import genHeatMap
+    from constants import SIGMA, MAG, WIDTH, HEIGHT
+
+    print(f"Processing video: {video_name}")
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Failed to open video: {video_path}")
+        return video_name, None
+    data = pd.read_csv(csv_path)
+    frames_numbers = data['Frame'].values
+    visibilities = data['Visibility'].values
+    x_coords = data['X'].values
+    y_coords = data['Y'].values
+    num_frames = len(frames_numbers)
+
+    ret, sample_frame = cap.read()
+    if not ret:
+        print(f"Failed to read video: {video_path}")
+        cap.release()
+        return video_name, None
+    target_img_height = HEIGHT
+    target_img_width = WIDTH
+    sigma = SIGMA
+    mag = MAG
+    sequence_dim = (3, 3)
+    ratio = sample_frame.shape[0] / target_img_height
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    x_data_list = []
+    y_data_list = []
+
+    for i in range(0, num_frames - (sequence_dim[0] - 1)):
+        frames_sequence = []
+        for j in range(sequence_dim[0]):
+            frame_idx = frames_numbers[i + j]
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            ret, frame = cap.read()
+            if not ret:
+                print(f"Failed to read frame {frame_idx} from {video_name}")
+                break
+            frame = cv2.resize(frame, (target_img_width, target_img_height))
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img_array = np.array(frame)
+            img_array = np.moveaxis(img_array, -1, 0)
+            frames_sequence.extend([img_array[0], img_array[1], img_array[2]])
+        if len(frames_sequence) != sequence_dim[0] * 3:
+            continue
+        x_data_list.append(np.stack(frames_sequence, axis=0))
+
+        heatmap_sequence = []
+        for j in range(sequence_dim[1]):
+            if visibilities[i + j] == 0:
+                heatmap = genHeatMap(target_img_width, target_img_height, -1, -1, sigma, mag)
+            else:
+                heatmap = genHeatMap(target_img_width, target_img_height,
+                                     int(x_coords[i + j] / ratio), int(y_coords[i + j] / ratio),
+                                     sigma, mag)
+            heatmap_sequence.append(heatmap)
+        y_data_list.append(heatmap_sequence)
+
+    cap.release()
+    x_data = np.asarray(x_data_list, dtype='float32') / 255.0
+    y_data = np.asarray(y_data_list)
+    print(f"Saving video: x={x_data.shape}, y={y_data.shape} to {hdf5_path}")
+    import h5py
+    with h5py.File(hdf5_path, "w", swmr=True, libver="latest") as f:
+        f.create_dataset('x', data=x_data, compression='gzip', chunks=(min(100, x_data.shape[0]), *x_data.shape[1:]))
+        f.create_dataset('y', data=y_data, compression='gzip', chunks=(min(100, y_data.shape[0]), *y_data.shape[1:]))
+    del x_data, y_data
+    gc.collect()
+    return video_name, hdf5_path
 
 class CustomDataset(BaseCustomDataset):
     def process_data(self, chunk_size=1000):
-        """Process the custom dataset incrementally."""
+        """Process the custom dataset incrementally (parallelized by video)."""
         metadata = self._load_metadata()
         video_pattern = os.path.join(self.root_dir, self.mode, "*", "video", "*.mp4")
         video_list = glob(video_pattern)
-        file_count = len(self.data_files) + 1
+        tasks = []
         for video_path in video_list:
             video_name = os.path.basename(video_path).replace('.mp4', '')
             if video_name in metadata:
@@ -201,77 +280,14 @@ class CustomDataset(BaseCustomDataset):
                 print(f"CSV file not found for {video_name}, skipping")
                 continue
             hdf5_path = os.path.join(self.processed_folder, f"{video_name}.h5")
-            self._process_single_video(video_path, csv_path, self.processed_folder, video_name)
-            metadata[video_name] = hdf5_path
+            tasks.append((video_path, csv_path, self.processed_folder, video_name, hdf5_path))
+
+        if tasks:
+            with Pool(processes=min(4, len(tasks))) as pool:
+                results = pool.map(process_video_worker, tasks)
+            # Update metadata after all processes
+            for video_name, hdf5_path in results:
+                if hdf5_path is not None:
+                    metadata[video_name] = hdf5_path
             self._save_metadata(metadata)
         self._refresh_file_list()
-
-    def _process_single_video(self, video_path, csv_path, save_dir, video_name):
-        """Process a single video and its CSV, saving all data in one HDF5 file named after the video."""
-        print(f"Processing video: {video_name}")
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            print(f"Failed to open video: {video_path}")
-            return
-        data = pd.read_csv(csv_path)
-        frames_numbers = data['Frame'].values
-        visibilities = data['Visibility'].values
-        x_coords = data['X'].values
-        y_coords = data['Y'].values
-        num_frames = len(frames_numbers)
-
-        # Get resize ratio from first frame
-        ret, sample_frame = cap.read()
-        if not ret:
-            print(f"Failed to read video: {video_path}")
-            cap.release()
-            return
-        ratio = sample_frame.shape[0] / self.target_img_height
-        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-        x_data_list = []
-        y_data_list = []
-
-        for i in range(0, num_frames - (self.sequence_dim[0] - 1)):
-            frames_sequence = []
-            for j in range(self.sequence_dim[0]):
-                frame_idx = frames_numbers[i + j]
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-                ret, frame = cap.read()
-                if not ret:
-                    print(f"Failed to read frame {frame_idx} from {video_name}")
-                    break
-                frame = cv2.resize(frame, (self.target_img_width, self.target_img_height))
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                img_array = np.array(frame)
-                img_array = np.moveaxis(img_array, -1, 0)
-                frames_sequence.extend([img_array[0], img_array[1], img_array[2]])
-            if len(frames_sequence) != self.sequence_dim[0] * 3:
-                continue
-            x_data_list.append(np.stack(frames_sequence, axis=0))
-
-            heatmap_sequence = []
-            for j in range(self.sequence_dim[1]):
-                if visibilities[i + j] == 0:
-                    heatmap = genHeatMap(self.target_img_width, self.target_img_height, -1, -1, self.sigma, self.mag)
-                else:
-                    heatmap = genHeatMap(self.target_img_width, self.target_img_height,
-                                        int(x_coords[i + j] / ratio), int(y_coords[i + j] / ratio),
-                                        self.sigma, self.mag)
-                heatmap_sequence.append(heatmap)
-            y_data_list.append(heatmap_sequence)
-
-        cap.release()
-        self._save_full_video(x_data_list, y_data_list, save_dir, f"{video_name}.h5")
-
-    def _save_full_video(self, x_data_list, y_data_list, save_dir, filename):
-        """Save all data for a video to a single HDF5 file."""
-        x_data = np.asarray(x_data_list, dtype='float32') / 255.0
-        y_data = np.asarray(y_data_list)
-        hdf5_path = os.path.join(save_dir, filename)
-        print(f"Saving video: x={x_data.shape}, y={y_data.shape} to {hdf5_path}")
-        with h5py.File(hdf5_path, 'w', libver='latest') as f:
-            f.create_dataset('x', data=x_data, compression='gzip', chunks=(min(100, x_data.shape[0]), *x_data.shape[1:]))
-            f.create_dataset('y', data=y_data, compression='gzip', chunks=(min(100, y_data.shape[0]), *y_data.shape[1:]))
-        del x_data, y_data
-        gc.collect()
