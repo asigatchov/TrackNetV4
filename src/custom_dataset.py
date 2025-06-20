@@ -200,16 +200,14 @@ class CustomDataset(BaseCustomDataset):
             if not os.path.exists(csv_path):
                 print(f"CSV file not found for {video_name}, skipping")
                 continue
-            hdf5_path = os.path.join(self.processed_folder, f"data_{file_count}.h5")
-            self._process_single_video(video_path, csv_path, self.processed_folder, file_count, chunk_size)
+            hdf5_path = os.path.join(self.processed_folder, f"{video_name}.h5")
+            self._process_single_video(video_path, csv_path, self.processed_folder, video_name)
             metadata[video_name] = hdf5_path
-            file_count += 1
             self._save_metadata(metadata)
         self._refresh_file_list()
 
-    def _process_single_video(self, video_path, csv_path, save_dir, file_count=1, chunk_size=1000):
-        """Process a single video and its CSV, saving in HDF5 chunks."""
-        video_name = os.path.basename(video_path).replace('.mp4', '')
+    def _process_single_video(self, video_path, csv_path, save_dir, video_name):
+        """Process a single video and its CSV, saving all data in one HDF5 file named after the video."""
         print(f"Processing video: {video_name}")
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -233,7 +231,6 @@ class CustomDataset(BaseCustomDataset):
 
         x_data_list = []
         y_data_list = []
-        chunk_count = 0
 
         for i in range(0, num_frames - (self.sequence_dim[0] - 1)):
             frames_sequence = []
@@ -258,28 +255,21 @@ class CustomDataset(BaseCustomDataset):
                 if visibilities[i + j] == 0:
                     heatmap = genHeatMap(self.target_img_width, self.target_img_height, -1, -1, self.sigma, self.mag)
                 else:
-                    heatmap = genHeatMap(self.target_img_width, self.target_img_height, 
-                                        int(x_coords[i + j] / ratio), int(y_coords[i + j] / ratio), 
+                    heatmap = genHeatMap(self.target_img_width, self.target_img_height,
+                                        int(x_coords[i + j] / ratio), int(y_coords[i + j] / ratio),
                                         self.sigma, self.mag)
                 heatmap_sequence.append(heatmap)
             y_data_list.append(heatmap_sequence)
 
-            if len(x_data_list) >= chunk_size:
-                self._save_chunk(x_data_list, y_data_list, save_dir, f"data_{file_count}_{chunk_count}.h5")
-                x_data_list, y_data_list = [], []
-                chunk_count += 1
-                gc.collect()
-
-        if x_data_list:
-            self._save_chunk(x_data_list, y_data_list, save_dir, f"data_{file_count}_{chunk_count}.h5")
         cap.release()
+        self._save_full_video(x_data_list, y_data_list, save_dir, f"{video_name}.h5")
 
-    def _save_chunk(self, x_data_list, y_data_list, save_dir, filename):
-        """Save a chunk of data to an HDF5 file."""
+    def _save_full_video(self, x_data_list, y_data_list, save_dir, filename):
+        """Save all data for a video to a single HDF5 file."""
         x_data = np.asarray(x_data_list, dtype='float32') / 255.0
         y_data = np.asarray(y_data_list)
         hdf5_path = os.path.join(save_dir, filename)
-        print(f"Saving chunk: x={x_data.shape}, y={y_data.shape} to {hdf5_path}")
+        print(f"Saving video: x={x_data.shape}, y={y_data.shape} to {hdf5_path}")
         with h5py.File(hdf5_path, 'w', libver='latest') as f:
             f.create_dataset('x', data=x_data, compression='gzip', chunks=(min(100, x_data.shape[0]), *x_data.shape[1:]))
             f.create_dataset('y', data=y_data, compression='gzip', chunks=(min(100, y_data.shape[0]), *y_data.shape[1:]))
