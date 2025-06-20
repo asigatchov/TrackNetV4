@@ -188,7 +188,7 @@ class CustomDataset(BaseCustomDataset):
     def process_data(self, chunk_size=1000):
         """Process the custom dataset incrementally."""
         metadata = self._load_metadata()
-        video_pattern = os.path.join('data',self.root_dir, self.mode, "*", "video", "*.mp4")
+        video_pattern = os.path.join(self.root_dir, self.mode, "*", "video", "*.mp4")
         video_list = glob(video_pattern)
         file_count = len(self.data_files) + 1
         for video_path in video_list:
