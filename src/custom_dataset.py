@@ -12,6 +12,7 @@ import gc
 from util import genHeatMap
 from constants import SIGMA, MAG, WIDTH, HEIGHT
 from multiprocessing import Pool, cpu_count
+import h5py
 
 class BaseCustomDataset:
     def __init__(self, root_dir, mode, target_img_height=HEIGHT, target_img_width=WIDTH, sequence_dim=(3,3), mag=MAG, sigma=SIGMA, shuffle=True, buffer_size=5):
@@ -57,7 +58,7 @@ class BaseCustomDataset:
         self._refresh_file_list()
         return len(self.data_files)
 
-    def _load_data(self, data_path, chunk_size=240):
+    def _load_data(self, data_path, chunk_size=120):
         """Yield x and y data chunks from an HDF5 file, up to 240 sequences each."""
         print(f"Loading data from {data_path}, size: {os.path.getsize(data_path) / 1000 / 1000:.2f} MB")
         start = time.time()
@@ -255,7 +256,6 @@ def process_video_worker(args):
     x_data = np.asarray(x_data_list, dtype='float32') / 255.0
     y_data = np.asarray(y_data_list)
     print(f"Saving video: x={x_data.shape}, y={y_data.shape} to {hdf5_path}")
-    import h5py
     with h5py.File(hdf5_path, "w", swmr=True, libver="latest") as f:
         f.create_dataset('x', data=x_data, compression='gzip', chunks=(min(100, x_data.shape[0]), *x_data.shape[1:]))
         f.create_dataset('y', data=y_data, compression='gzip', chunks=(min(100, y_data.shape[0]), *y_data.shape[1:]))
@@ -283,7 +283,7 @@ class CustomDataset(BaseCustomDataset):
             tasks.append((video_path, csv_path, self.processed_folder, video_name, hdf5_path))
 
         if tasks:
-            with Pool(processes=min(4, len(tasks))) as pool:
+            with Pool(processes=min(2, len(tasks))) as pool:
                 results = pool.map(process_video_worker, tasks)
             # Update metadata after all processes
             for video_name, hdf5_path in results:

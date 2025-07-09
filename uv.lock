@@ -1213,7 +1213,7 @@ wheels = [
 
 [[package]]
 name = "tensorflow"
-version = "2.17.0"
+version = "2.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -1240,14 +1240,14 @@ dependencies = [
     { name = "wrapt" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/a5/89a9bdae9f241cad167edb6c890ef2b4c842c5ae81058a2fbfd702dba9bf/tensorflow-2.17.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:e8d26d6c24ccfb139db1306599257ca8f5cfe254ef2d023bfb667f374a17a64d", size = 236174211 },
-    { url = "https://files.pythonhosted.org/packages/76/81/a03d7724df23d476af954673ae79836a5ca8d6fde66f88483dbe26f61a23/tensorflow-2.17.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ca82f98ea38fa6c9e08ccc69eb6c2fab5b35b30a8999115b8b63b6f02fc69d9d", size = 223945591 },
-    { url = "https://files.pythonhosted.org/packages/63/4e/f5404467b31cf640ed8de31a283d104c845be6fa430dac9daef0c4385af8/tensorflow-2.17.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8339777b1b5ebd8ffadaa8196f786e65fbb081a371d8e87b52f24563392d8552", size = 601301478 },
-    { url = "https://files.pythonhosted.org/packages/ed/b6/62345568cd07de5d9254fcf64d7e44aacbb6abde11ea953b3cb320e58d19/tensorflow-2.17.0-cp311-cp311-win_amd64.whl", hash = "sha256:ef615c133cf4d592a073feda634ccbeb521a554be57de74f8c318d38febbeab5", size = 2046 },
-    { url = "https://files.pythonhosted.org/packages/e0/cb/aab1d277dc1cb45166a1ac857bf535ef322437f4f6fbef55ad6dee31e00d/tensorflow-2.17.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:ee18b4fcd627c5e872eabb25092af6c808b6ec77948662c88fc5c89a60eb0211", size = 236281093 },
-    { url = "https://files.pythonhosted.org/packages/e5/db/a365f4bdb6a0067ea9cc0a4b27757e2755627f3ff29dcca4cce3d274662d/tensorflow-2.17.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:72adfef0ee39dd641627906fd7b244fcf21bdd8a87216a998ed74d9c74653aff", size = 224039182 },
-    { url = "https://files.pythonhosted.org/packages/d7/24/f7b5c130975303efa4a91341e294fd784b94910c2a4c0f0f0561e5fc7405/tensorflow-2.17.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ad7bfea6afb4ded3928ca5b24df9fda876cea4904c103a5163fcc0c3483e7a4", size = 601419499 },
-    { url = "https://files.pythonhosted.org/packages/48/a7/2f03f6de3c4976db6d2a898c408feb491ca10399af1f6039d6bef3e6ba6a/tensorflow-2.17.0-cp312-cp312-win_amd64.whl", hash = "sha256:278bc80642d799adf08dc4e04f291aab603bba7457d50c1f9bc191ebbca83f43", size = 2045 },
+    { url = "https://files.pythonhosted.org/packages/bc/fd/92db1ecf5550f8937c21c28f84228959adb9ccba5f19e283ec7f22825b11/tensorflow-2.17.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:595c220b0febe2295a150e0d870c742a75c56b145a63ed878f78d64aa43c6ca6", size = 236176925 },
+    { url = "https://files.pythonhosted.org/packages/45/56/d1f227b56a82cf168d4d5b3fa6094857079f36891af4bc851281afa5cc23/tensorflow-2.17.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bc41bc3e31d205dcf6e4b8afc0514de05445303d93fade03549085ef8c45a2b2", size = 223945776 },
+    { url = "https://files.pythonhosted.org/packages/df/9a/f5b1f4b2c08295ae1cb8760d1fb6043485459f0d8c107dd900e76a6ba25d/tensorflow-2.17.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:68841e17e573301d8ba9192f929b8096b0b341567cb81414096305c723de68d0", size = 601300475 },
+    { url = "https://files.pythonhosted.org/packages/c0/e6/8dbd20c4942b578aa18ef61e8d7858ddbd3650bbea731539c1fdadbaa466/tensorflow-2.17.1-cp311-cp311-win_amd64.whl", hash = "sha256:a6bd9474f1e0dedb7deb331c8e93cf2d5997da8781a1949f75c4a7cf8923d2e3", size = 7518 },
+    { url = "https://files.pythonhosted.org/packages/af/29/29bfb68a1cfd61649cd51f5f08474a9eab343c2402f8998af6f1f6120aa5/tensorflow-2.17.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:d43698039fd057ee6d7c3f908c4e9a6e310be6e77adda419bae3fee5ca7192fe", size = 236283570 },
+    { url = "https://files.pythonhosted.org/packages/3a/86/3af00483ff5215e52ebd9d5be2987798a6985f60db413091522a97459c2c/tensorflow-2.17.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:695741b80ea9b2603a8d3f423051476c02a9cf48f4721d18c4dafbe0a8a5ca91", size = 224039295 },
+    { url = "https://files.pythonhosted.org/packages/f4/15/c81ec3b1ca9980cba8a8123a4df0a3f3b96ae4f49d024cd0c4175aa443c0/tensorflow-2.17.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0c3452ab09940cbc3be896641b256855ba92154b79a90c864c5b2be79db78a64", size = 601418583 },
+    { url = "https://files.pythonhosted.org/packages/5d/53/0eafd55dd5802c60ac69f6ad01dec61cdb894b591a1f3e471e2a01edbe99/tensorflow-2.17.1-cp312-cp312-win_amd64.whl", hash = "sha256:faf032fae35de0071f20850abd23d78e0e3ae116ce7fbfb9d034da2acc900543", size = 7521 },
 ]
 
 [[package]]
@@ -1424,7 +1424,7 @@ requires-dist = [
     { name = "six", specifier = "==1.16.0" },
     { name = "tensorboard", specifier = "==2.17.1" },
     { name = "tensorboard-data-server", specifier = "==0.7.2" },
-    { name = "tensorflow", specifier = "==2.17.0" },
+    { name = "tensorflow", specifier = "==2.17.1" },
     { name = "tensorflow-estimator", specifier = "==2.15.0" },
     { name = "tensorflow-io-gcs-filesystem", specifier = "==0.37.1" },
     { name = "termcolor", specifier = "==2.4.0" },

@@ -100,8 +100,15 @@ def get_model(model_name, height, width):
     """
     Retrieve an instance of a TrackNet model based on the specified model name.
     """
+
+
     if model_name == "Baseline_TrackNetV2":
         return TrackNetV2(height, width)
+
+    elif model_name == "VballNetV1":
+        from models.VballNetV1 import VballNetV1
+        return  VballNetV1(height, width, "TypeA")
+
     elif model_name == "TrackNetV4_TypeA":
         return TrackNetV4(height, width, "TypeA")
     elif model_name == "TrackNetV4_TypeB":
@@ -110,7 +117,7 @@ def get_model(model_name, height, width):
         from models.TrackNetV4Nano import TrackNetV4Nano
         return TrackNetV4Nano(height, width, fusion_layer_type="TypeA")
     elif model_name == "TrackNetV4_Small":
-        from models.TrackNetV4Small import TrackNetV4Small
+        from src.models.TrackNetV4Small import TrackNetV4Small
         return TrackNetV4Small(height, width, fusion_layer_type="TypeA")
     elif model_name == "TrackNetV4_Fast":
         from models.TrackNetV4Fast import TrackNetV4Fast
@@ -124,7 +131,7 @@ def get_dataset(dataset_name, mode, height=HEIGHT, width=WIDTH, chunk_size=1000)
     """
     Retrieve an instance of a dataset based on the provided dataset name and mode.
     """
-    
+
     if dataset_name == "custom_dataset":
         from custom_dataset import CustomDataset
         return CustomDataset(root_dir=CUSTOMER_DATASET_ROOT, mode=mode,  target_img_height=height, target_img_width=width)

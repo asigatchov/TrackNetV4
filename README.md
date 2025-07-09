@@ -28,22 +28,22 @@ Additionally, feel free to explore the project website for more visualizations, 
 ### 📥 1. Clone the Repository
 
 ```bash
-git clone https://github.com/AR4152/TrackNetV4.git
+git clone https://github.com/asigatchov/TrackNetV4.git
 cd TrackNetV4
 ```
 
 ### 🧪 2. Set Up the Environment
 
-We recommend using [**conda**](https://anaconda.org/anaconda/conda) for environment management.
+We recommend using [**uv  **](https://docs.astral.sh/uv/getting-started/installation/) for environment management.
 
 ```bash
-conda env create -f environment.yml
-conda activate TrackNetV4
+uv sync
 ```
-
-💡 *Tip: Rename the environment if you prefer: `-n your_env_name` in the command above.*
-
 ### 🗂️ 3. Prepare the Dataset
+
+```bash
+uv run src/preprocess_custom.py --dataset custom_dataset
+```
 
 Refer to the dataset preparation instructions inside [`docs/DATASET.md`](docs/DATASET.md).
 
@@ -203,8 +203,8 @@ If you find TrackNetV4 useful in your research, please consider 📝 citing our 
 ```BibTeX
 @INPROCEEDINGS{10889364,
   author={Raj, Arjun and Wang, Lei and Gedeon, Tom},
-  booktitle={ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
-  title={TrackNetV4: Enhancing Fast Sports Object Tracking with Motion Attention Maps}, 
+  booktitle={ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  title={TrackNetV4: Enhancing Fast Sports Object Tracking with Motion Attention Maps},
   year={2025},
   volume={},
   number={},
